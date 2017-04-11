@@ -1,0 +1,172 @@
+---
+title: "Assignment4"
+author: "Steve Jones"
+date: "April 9, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#getwd()
+#setwd("C:/Rockhurst/ADM/Data")
+
+#Github local directory
+setwd("C:/Rockhurst/ADM/Scripts/ADM_Week_4/data")
+
+library(arules) 
+bookbaskets <- read.transactions("bookdata.tsv.gz", format="single",  	# Note: 2 
+                                 sep="\t",                    	# Note: 3 
+                                 cols=c("userid", "title"),    	# Note: 4 
+                                 rm.duplicates=T)       	# Note: 5
+
+# Note 1: 
+#   Load the arules package. 
+
+# Note 2: 
+#   Specify the file and the file format. 
+
+# Note 3: 
+#   Specify the column separator (a tab). 
+
+# Note 4: 
+#   Specify the column of transaction IDs and of 
+#   item IDs, respectively. 
+
+# Note 5: 
+#   Tell the function to look for and remove 
+#   duplicate entries (for example, multiple entries 
+#   for “The Hobbit” by the same user). 
+
+# 92,108 book purchases.
+#220,447 user IDs.
+
+inspect(bookbaskets[1:5]) #Examine the first five transactions
+
+basketSizes<-size(bookbaskets) #Calculate number of books purchased by "userID"
+
+
+bookFreq<-itemFrequency(bookbaskets) #Calculate the support for each book title 
+
+
+bookCount <- (bookFreq/sum(bookFreq))*sum(basketSizes) 
+#   Get the absolute count of book occurrences. 
+
+
+bookbasket_use<-bookbaskets[basketSizes>1] #Only keep transactions with more than one book purchased. 
+
+bookbasket_use
+```
+```{r}
+#***********************************************************************************************
+#Examine data set
+dim(bookbasket_use)[1]
+class(bookbasket_use)
+colnames(bookbasket_use)
+#***********************************************************************************************
+
+
+Top10Books<-itemFrequencyPlot(bookbaskets, topN = 10) #top 10
+#The Top 10 selling titles for Flourish abd Blotts bookstore are:
+# 1. Wild Animus
+# 2. The Lovely Bones: A Novel
+# 3. She's Come Undone
+# 4. The Da Vinci Code
+# 5. Harry Potter and the Sorcerer's Stone
+# 6. The Nanny Diaries: A Novel
+# 7. A Painted House
+# 8. Bridget Jones's Diary
+# 9. The Secret Life of Bees
+# 10.Divine Secrets of the Ya-Ya Sisterhood: A Novel
+
+
+#*************************************************
+```
+#```{r}
+# Select support and confidence
+# Support = supported by at least 250 customers: 250/40822[1] = .006 <<< I'll start here and tweak based on trial run
+# confidence = 75% 
+
+#Let's try Support = 0.006. Confidence = 0.75.
+# Bookbaskets_rules_250 <- apriori(bookbaskets, parameter = list(support = 0.006, confidence = 0.75)) 
+# #Outcome = 0 rules
+# ```
+# ```{r}
+# #Trying Support = 0.003. Confidence = 0.75.
+# #Support = supported by at least 125 customers: 250/40822[1] = .003
+# Bookbaskets_rules_125 <- apriori(bookbaskets, parameter = list(support = 0.003, confidence = 0.75)) 
+# #Outcome = 0 rules
+# ```
+```{r}
+#Trying Support = 0.001. Confidence = 0.75.
+#Trying Support = 0.001. Confidence = 0.80.
+#Support = supported by at least 50 customers: 50/40822[1] = .001
+Bookbaskets_rules_50 <- apriori(bookbaskets, parameter = list(support = 0.001, confidence = 0.75))
+Bookbaskets_rules_50 <- apriori(bookbaskets, parameter = list(support = 0.001, confidence = 0.80))
+
+#Outcome = 101 rules
+#c .80 = 84 rules
+
+summary(Bookbaskets_rules_50)
+```
+```{r}
+# Inspect rules
+summary(Bookbaskets_rules_50)
+print(Bookbaskets_rules_50)
+inspect(Bookbaskets_rules_50)
+```
+```{r}
+# Trying to identify actionable non-trivial rules
+# I'll sort by lift and look at the top 10 rules and see if anything stands out
+newrule <- inspect(sort(Bookbaskets_rules_50, decreasing = TRUE,by="confidence"))
+
+
+
+
+
+
+
+```
+
+```{r}
+# Trying to identify actionable non-trivial rules
+# I'll sort by lift and look at the next set
+
+
+```
+```{r}
+# Stephanie Plum appears to be a popular author - Let's see how many rules include Stephanie Plum
+
+stephaniePlum_rules <- subset(newrule,items%pin%"Stephanie Plum")
+
+```
+```{r}
+
+inspect(stephaniePlum_rules)
+#Google search show Stephanie Plum isn't the author but character in a book series
+
+inspect(newrule)
+
+
+```
+#*****************************************************************************************************************************************************************
+# A vast majority of the sets indicate that customers  tend to buy multiple titles within the same series.
+# While it is understood that books of the sames series should be displayed together.
+#My recommendations is to place the first book of the popular series in a display case at the end of the aisle.
+# Since the series titles are displayed together by default, We should target those customers finishing up on one series
+# Our display case becomes a list of suggested series. Based on lift of these sets I don't see customers moving from series to series. 
+# Our display case should include the title from the Harry Potter series, Stephanie Plum series, Left Behind series, Key of Valor & The Queen of the Damned titles could also be included.
+#*****************************************************************************************************************************************************************
+ 
+
+
+
+
+
+
+
+
+
+
